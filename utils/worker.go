@@ -37,7 +37,7 @@ func ClaimNextQueued(ctx context.Context, db *pgxpool.Pool, workerID string) (id
 	return id, ownerKey, topic, true, nil
 }
 
-func markSucceeded(ctx context.Context, db *pgxpool.Pool, id string) error {
+func MarkSucceeded(ctx context.Context, db *pgxpool.Pool, id string) error {
 	_, err := db.Exec(ctx, `
 		UPDATE idea_requests
 		SET status='succeeded',

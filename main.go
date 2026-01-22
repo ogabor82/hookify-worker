@@ -70,8 +70,13 @@ func main() {
 			time.Sleep(pollEvery)
 			continue
 		}
-		fmt.Println("claimed idea request: %s", id)
-		fmt.Println("owner key: %s", ownerKey)
-		fmt.Println("topic: %s", topic)
+		fmt.Printf("claimed request id=%s owner=%s topic=%q\n", id, ownerKey, topic)
+
+		err = utils.MarkSucceeded(ctx, pool, id)
+		if err != nil {
+			fmt.Printf("failed to mark request as succeeded: %v\n", err)
+			return
+		}
+		fmt.Printf("marked request as succeeded id=%s\n", id)
 	}
 }
