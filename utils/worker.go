@@ -7,7 +7,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func claimNextQueued(ctx context.Context, db *pgxpool.Pool, workerID string) (id, ownerKey, topic string, found bool, err error) {
+func ClaimNextQueued(ctx context.Context, db *pgxpool.Pool, workerID string) (id, ownerKey, topic string, found bool, err error) {
 	row := db.QueryRow(ctx, `
 		WITH picked AS (
 			SELECT id

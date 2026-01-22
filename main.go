@@ -1,14 +1,15 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"time"
 
-	"context"
-
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/joho/godotenv"
+
+	"hookify-worker/utils"
 )
 
 func main() {
@@ -57,4 +58,20 @@ func main() {
 	}
 
 	fmt.Println("worker started:", workerID)
+
+	for {
+		id, ownerKey, topic, found, err := utils.ClaimNextQueued(ctx, pool, workerID)
+		if err != nil {
+			fmt.Printf("failed to claim next queued: %v\n", err)
+			return
+		}
+		if !found {
+			fmt.Println("no queued idea requests found")
+			time.Sleep(pollEvery)
+			continue
+		}
+		fmt.Println("claimed idea request: %s", id)
+		fmt.Println("owner key: %s", ownerKey)
+		fmt.Println("topic: %s", topic)
+	}
 }
