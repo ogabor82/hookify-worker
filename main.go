@@ -113,7 +113,6 @@ func main() {
 
 		if err := natsConn.Publish(SubjectIdeaClaimed, json); err != nil {
 			fmt.Printf("failed to publish idea.claimed event: %v\n", err)
-			// döntés: itt akár continue is lehet, nem kell megállni
 		}
 
 		err = utils.MarkSucceeded(ctx, pool, id)
