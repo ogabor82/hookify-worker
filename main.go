@@ -10,7 +10,20 @@ import (
 	"github.com/joho/godotenv"
 
 	"hookify-worker/utils"
+
+	"encoding/json"
+
+	"github.com/nats-io/nats.go"
 )
+
+type IdeaClaimedEvent struct {
+	RequestID string `json:"request_id"`
+	OwnerKey  string `json:"owner_key"`
+	Topic     string `json:"topic"`
+	ClaimedBy string `json:"claimed_by"`
+}
+
+const SubjectIdeaClaimed = "idea.claimed"
 
 func main() {
 	// Load .env file
@@ -28,6 +41,19 @@ func main() {
 	if workerID == "" {
 		workerID = "worker-1"
 	}
+
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
+		fmt.Println("NATS_URL is missing")
+		return
+	}
+
+	natsConn, err := nats.Connect(natsURL)
+	if err != nil {
+		fmt.Println("failed to connect to nats: %v", err)
+		return
+	}
+	defer natsConn.Close()
 
 	fmt.Println("Worker ID:", workerID)
 
@@ -71,6 +97,24 @@ func main() {
 			continue
 		}
 		fmt.Printf("claimed request id=%s owner=%s topic=%q\n", id, ownerKey, topic)
+
+		event := IdeaClaimedEvent{
+			RequestID: id,
+			OwnerKey:  ownerKey,
+			Topic:     topic,
+			ClaimedBy: workerID,
+		}
+
+		json, err := json.Marshal(event)
+		if err != nil {
+			fmt.Printf("failed to marshal event: %v\n", err)
+			return
+		}
+
+		if err := natsConn.Publish(SubjectIdeaClaimed, json); err != nil {
+			fmt.Printf("failed to publish idea.claimed event: %v\n", err)
+			// döntés: itt akár continue is lehet, nem kell megállni
+		}
 
 		err = utils.MarkSucceeded(ctx, pool, id)
 		if err != nil {
