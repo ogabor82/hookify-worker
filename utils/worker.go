@@ -46,3 +46,13 @@ func MarkSucceeded(ctx context.Context, db *pgxpool.Pool, id string) error {
 	`, id)
 	return err
 }
+
+func MarkFailed(ctx context.Context, db *pgxpool.Pool, id string) error {
+	_, err := db.Exec(ctx, `
+		UPDATE idea_requests
+		SET status='failed',
+		    finished_at=now()
+		WHERE id=$1
+	`, id)
+	return err
+}

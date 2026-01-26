@@ -14,6 +14,8 @@ import (
 	"encoding/json"
 
 	"github.com/nats-io/nats.go"
+	"github.com/openai/openai-go/v3"
+	"github.com/openai/openai-go/v3/option"
 )
 
 type IdeaClaimedEvent struct {
@@ -83,6 +85,10 @@ func main() {
 		return
 	}
 
+	client := openai.NewClient(
+		option.WithAPIKey(os.Getenv("OPENAI_API_KEY")),
+	)
+
 	fmt.Println("worker started:", workerID)
 
 	for {
@@ -109,6 +115,19 @@ func main() {
 		if err != nil {
 			fmt.Printf("failed to marshal event: %v\n", err)
 			return
+		}
+
+		ideas, err := utils.GenerateIdeas(ctx, &client, topic)
+		if err != nil {
+			_ = utils.MarkFailed(ctx, pool, id)
+			fmt.Printf("failed to generate ideas: %v\n", err)
+			continue
+		}
+
+		if err := utils.InsertIdeas(ctx, pool, id, ideas); err != nil {
+			_ = utils.MarkFailed(ctx, pool, id)
+			fmt.Printf("failed to insert ideas: %v\n", err)
+			continue
 		}
 
 		if err := natsConn.Publish(SubjectIdeaClaimed, json); err != nil {
